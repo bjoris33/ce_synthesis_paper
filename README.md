@@ -1,17 +1,13 @@
-# Supplementary Methods and Materials for the mSystems "Separation of cohorts on the basis of bacterial type IV conjugation systems identified from metagenomic assemblies" paper
+# Supplementary Computational Methods for "Functionalizing uncharacterized conjugative systems from metagenomic data for targeted delivery of Cas9"
 
 ## Table of contents
 
 This Readme will have the workflow below the TOC
 
-### Bin
-* All scripts used within the project
-
-### Figures
-* PDFs of the figures generated and scripts for generating the figures
+Bin folder contains scripts used within the project
 
 
-In this Readme, you will find the workflow necessary for recapitulating the workflow I used to generate the results in the paper. Unfortunately, these methods span back well over a year, and involve a number of disjointed processes, so there is no master script for running the methodology. Additionally, the processes to months to run, so it's probably for the best not to lock your workstation into running this scripts for eternity.
+In this Readme, you will find the workflow necessary for recapitulating the workflow I used to generate the bioinformatic results in the paper. Unfortunately, these methods span back over four years, and involve a number of disjointed processes, so there is no master script for running the methodology. Additionally, the process of annotating the genome set using the UniRef90 is lengthy, so I suggest testing it on a subset.
 
 System information:
 
@@ -33,9 +29,7 @@ Run in a conda environment with the following programs installed:
 - MOB suite
 - CAT/BAT (with databases installed)
 
-**Note, there's a high chance that not all programs can be resolved in same environment.  I used separate environments for CAT/BAT and MOB Suite/PlasFlow than the other prgrams**
-
-Follow instructions in HMM-information.txt for instructions on how to add HMM profiles for conjugative systems in the anvi'o pipeline.
+**Note, there's a high chance that not all programs can be resolved in same environment.  I used separate environments for anvi'o and MOB Suite/PlasFlow than the other prgrams**
 
 Installed outside conda environment:
 - dedupe (used in scripts for downloading and processing reads, change install location in scripts)
@@ -79,7 +73,7 @@ Installed outside conda environment:
 * extracts regions containing conjugative systems from the contigs. This is explicitly to avoid potential issues of measuring average mapping frequencies of contigs containing integrative and conjugative elements (ICEs). Output to `../conjugative_systems`
 
 # Section 3: Population mapping to identified conjugative systems
-
+**Run in environment with anvi'o installed and requires SRA toolkit for fasterq-dump**
 **`pop_mapping_dl.sh` needs to be edited beforehand**
 `./pop_mapping_master.sh`
 * combines all extracted DNA sequences containing conjugative systems into `../population_mapping/unformated_contigs.fa`
@@ -94,41 +88,7 @@ Installed outside conda environment:
 
 **At this point, an equivalent to the population mapping anvi'o circular phylogram is viewable**
 
-# Section 4: Reassembly of select samples and mapping to conjugative systems
-
-`./reassembly_map_master.sh`
-* assembles metagenomes, and predicts conjugative systems, output in `../assemblies/`
-* combines all predicted conjugative systems into one file, `../reassembly/contigs.fa`
-* separates all contigs into separate fasta files, output in `../reassembly_contigs/`
-* ORF prediction and annotation, output in `../reassembly_prodigal_output/` and `../reassembly_diamond_output/`
-* annotation tables with a focus on conjugative protein output to `../reassembly_orf_tables/`
-* conjugative regions of contigs are extracted and output to `../reassembly_operons/`
-* short read data are mapped to conjugative systems and sorted bam files are output to `../reassembly_mapping/`
-* anvi'o profiles are generated, merged profile is output in `../reassembly_anvio/SAMPLES_MERGED/`
-* Kaiju is run to predict taxonomy of the contigs (script must be edited with install location of kaiju and databases)
-* Cohort and taxonomy data are imported into anvi'o profile
-
-**At this point, an equivalent to the reassembly anvi'o circular phylogram is viewable**
-
-# Section 5: Binning of reassemblies
-
-`./binning_master.sh`
-* reads are copied to `../binning/general/reads/` and `../binning/infant/reads/`
-* reads are mapped to assemblies from same cohort, sam files are converted to bam files and sorted, output to `../binning/general/mapping/` and `../binning/infant/mapping/`
-* binning with metabat2, output in working directory (the bin folder)
-* CheckM run to assess bin quality, output in working directory
-* evaluate proportions of conjugative systems included in metagenomic bins, output in `../binning_information/`
-
-# Section 6: PlasFlow and MOB suite
-* `PlasFlow.py --input contigs.fa --output plasflow_predictions.tsv` ran on set of full contigs (not extracted operons) for the "reassemblies" and genome set contigs
+# Section 4: PlasFlow and MOB suite
+* `PlasFlow.py --input contigs.fa --output plasflow_predictions.tsv` ran on set of full contigs (not extracted operons) for the genome set contigs
 * before `mob_typer` can be used, each contig must be separated, `separate_contigs.py` was used, full contigs file must be saved as `../genome_set_conj/contigs.fa`
 * `run_mob_typer.sh` to run MOB suite, `combine_mob_typer.sh` to combine into one table
-
-# Section 7: Comparison of taxonomic compositions
-* for this step, dereplicated genomes were in a folder `../mag_analysis/drep_out/dereplicated_genomes/`
-* `nohup CAT bins -b ../mag_analysis/drep_out/dereplicated_genomes/ -d /Volumes/bin/catbat_database/CAT_prepare_20210107/2021-01-07_CAT_database/ -t /Volumes/bin/catbat_database/CAT_prepare_20210107/2021-01-07_taxonomy/ -n 20 -s .fa -o ../mag_analysis/catbat/ &`
-* `CAT add_names -i ../mag_analysis/catbat.bin2classification.txt -o ../mag_analysis/catbat_taxonomy.txt -t /Volumes/bin/catbat_database/CAT_prepare_20210107/2021-01-07_taxonomy/` adds the taxonomy to the classification file
-* for this step, CEs were in folder `../remapping/reassembly_contigs/`
-* `nohup CAT bins -b ../remapping/reassembly_contigs/ -d /Volumes/bin/catbat_database/CAT_prepare_20210107/2021-01-07_CAT_database/ -t /Volumes/bin/catbat_database/CAT_prepare_20210107/2021-01-07_taxonomy/ -n 20 -s .fa -o ../ce_analysis/catbat &`
-* `CAT add_names -i ../ce_analysis/catbat.bin2classification.txt -o ../ce_analysis/catbat_taxonomy.txt -t /Volumes/bin/catbat_database/CAT_prepare_20210107/2021-01-07_taxonomy/` adds the taxonomy to the classification file
-* run scripts `mag_mapping.sh`,`mag_mapping_stats.sh`, `ce_mapping.sh`, `catbat_aggregate.py`, and `phylum_mag_mapping` to get final count tables used for visualization
